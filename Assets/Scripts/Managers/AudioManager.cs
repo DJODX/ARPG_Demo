@@ -120,6 +120,24 @@ public class AudioManager : MonoSingleton<AudioManager>
         PlaySFX(clips[Random.Range(0, clips.Length)]);
     }
 
+    /// <summary>
+    /// 在世界空间位置播放音效（保留 3D 空间感，音量受全局 sfxVolume 与静音管理）
+    /// </summary>
+    public void PlaySFXAtPoint(AudioClip clip, Vector3 position, float volume = 1f)
+    {
+        if (clip == null || sfxMuted) return;
+        AudioSource.PlayClipAtPoint(clip, position, sfxVolume * Mathf.Clamp01(volume));
+    }
+
+    /// <summary>
+    /// 在世界空间位置从数组中随机选一个播放
+    /// </summary>
+    public void PlayRandomSFXAtPoint(AudioClip[] clips, Vector3 position, float volume = 1f)
+    {
+        if (clips == null || clips.Length == 0) return;
+        PlaySFXAtPoint(clips[Random.Range(0, clips.Length)], position, volume);
+    }
+
     // ==================== 音量 / 静音控制 ====================
 
     /// <summary>

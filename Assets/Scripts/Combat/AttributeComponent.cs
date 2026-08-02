@@ -14,6 +14,8 @@ public class AttributeComponent : MonoBehaviour
 
     [Tooltip("攻击力")]
     public float atk = 10f;
+    [Tooltip("法力值")]
+    public float maxMp = 10f;
 
     [Tooltip("防御力")]
     public float def = 5f;
@@ -26,9 +28,16 @@ public class AttributeComponent : MonoBehaviour
 
     /// <summary>当前生命值（私有，只能通过 TakeDamage/Heal 修改）</summary>
     private float _currentHp;
+    /// <summary>当前法力值（私有，只能通过 UseMp/RegenerateMp 修改）</summary>
+    private float _currentMp;
 
     /// <summary>当前生命值</summary>
     public float CurrentHp => _currentHp;
+    /// <summary>当前法力值</summary>
+    public float CurrentMp => _currentMp;
+
+    /// <summary>法力值百分比 0~1，供 UI 法力条使用</summary>
+    public float MpPercent => maxMp <= 0f ? 0f : _currentMp / maxMp;
 
     /// <summary>生命值百分比 0~1，供 UI 血条使用</summary>
     public float HpPercent => maxHp <= 0f ? 0f : _currentHp / maxHp;
@@ -38,6 +47,8 @@ public class AttributeComponent : MonoBehaviour
 
     /// <summary>生命值变化事件（参数为当前生命值），UI 监听刷新血条</summary>
     public event Action<float> OnHpChanged;
+    /// <summary>法力值变化事件（参数为当前法力值），UI 监听刷新法力条</summary>
+    public event Action<float> OnMpChanged;
 
     /// <summary>死亡事件，供受击方自身（动画、掉落、禁用输入）监听</summary>
     public event Action OnDeath;
@@ -45,6 +56,7 @@ public class AttributeComponent : MonoBehaviour
     private void Awake()
     {
         _currentHp = maxHp;
+        _currentMp = maxMp;
     }
 
     /// <summary>

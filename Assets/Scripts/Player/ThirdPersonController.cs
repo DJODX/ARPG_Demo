@@ -30,7 +30,6 @@ namespace StarterAssets
 
         public AudioClip LandingAudioClip;
         public AudioClip[] FootstepAudioClips;
-        [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
 
         [Space(10)]
         [Tooltip("The height the player can jump")]
@@ -435,8 +434,9 @@ namespace StarterAssets
             {
                 if (FootstepAudioClips.Length > 0)
                 {
-                    var index = Random.Range(0, FootstepAudioClips.Length);
-                    AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
+                    // 脚步音量统一由 AudioManager 的 sfxVolume / 静音管理
+                    AudioManager.Instance.PlayRandomSFXAtPoint(FootstepAudioClips,
+                        transform.TransformPoint(_controller.center));
                 }
             }
         }
@@ -445,7 +445,9 @@ namespace StarterAssets
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
-                AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
+                // 落地音量统一由 AudioManager 的 sfxVolume / 静音管理
+                AudioManager.Instance.PlaySFXAtPoint(LandingAudioClip,
+                    transform.TransformPoint(_controller.center));
             }
         }
         public void PlayAttackSound()
