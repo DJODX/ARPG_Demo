@@ -1,0 +1,38 @@
+# ====================================
+# 白名单模式：只提交代码相关文件
+# 策略：先忽略所有，再放行指定内容
+# ====================================
+
+# 忽略一切（包括 Assets 下的资源）
+/*
+
+# ------- 放行必要的根级文件 -------
+!.gitignore
+
+# ------- 放行目录结构（允许进入） -------
+!Assets/
+!Assets/**/
+!Packages/
+
+# ------- Assets 内只保留 Scripts 目录下的代码（.cs + .meta） -------
+# 先忽略 Assets 下所有内容（含无扩展名文件，如 NuGet/LICENSE）
+/Assets/**
+# 放行 Scripts 目录结构
+!Assets/Scripts/
+!Assets/Scripts/**/
+# 放行 Scripts 下的 C# 脚本及其 meta
+!/Assets/Scripts/**/*.cs
+!/Assets/Scripts/**/*.cs.meta
+
+# ------- Packages：只保留依赖清单 -------
+/Packages/*.*
+!/Packages/manifest.json
+!/Packages/packages-lock.json
+
+# ------- 通用忽略（保险） -------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.user
+*.suo
+*.userprefs
