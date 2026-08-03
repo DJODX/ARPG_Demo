@@ -15,7 +15,7 @@ public class HitboxDetector : MonoBehaviour
     public Collider hitboxCollider;
 
     /// <summary>攻击者自身的碰撞体（避免打到自己）</summary>
-    private Collider _ownerCollider;
+    public Collider _ownerCollider;
 
     /// <summary>攻击者的属性组件（读取攻击力与暴击率）</summary>
     private AttributeComponent _ownerAttribute;
@@ -35,7 +35,6 @@ public class HitboxDetector : MonoBehaviour
         }
 
         // 获取攻击者自身的碰撞体与属性组件（挂在实体或其父级）
-        _ownerCollider = GetComponentInParent<Collider>();
         _ownerAttribute = GetComponentInParent<AttributeComponent>();
 
         // 默认禁用，等待动画事件开启
@@ -71,6 +70,9 @@ public class HitboxDetector : MonoBehaviour
         // 忽略攻击者自身
         if (_ownerCollider != null && other == _ownerCollider) return;
 
+        // 常开模式下武器可能与自身模型重叠：忽略同一实体（祖先/后代）内的碰撞体，防止自伤
+        if (other.transform.IsChildOf(transform) || transform.IsChildOf(other.transform)) return;
+
         // 目标必须实现 IDamageable
         var damageable = other.GetComponentInParent<IDamageable>();
         if (damageable == null) return;
@@ -89,6 +91,13 @@ public class HitboxDetector : MonoBehaviour
             hitDirection = (other.transform.position - transform.position).normalized,
             isCrit = isCrit
         });
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        // 目标离开判定范围后清除已命中记录，允许常开武器再次接触时重复造成伤害
+        var damageable = other.GetComponentInParent<IDamageable>();
+        if (damageable != null) _alreadyHit.Remove(damageable);
     }
     
 }

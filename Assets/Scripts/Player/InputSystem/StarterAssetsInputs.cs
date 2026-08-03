@@ -14,6 +14,7 @@ namespace StarterAssets
 		public bool sprint;
 		public bool attack;
 		public bool block;
+		public bool ViewpointLocked;
 
 		[Header("Movement Settings")]
 		public bool analogMovement;
@@ -55,6 +56,10 @@ namespace StarterAssets
 		{
 			BlockInput(value.isPressed);
 		}
+		public void OnViewpointLocked(InputValue value)
+		{
+			ViewpointLockedInput(value.isPressed);
+		}
 #endif
 
 
@@ -84,6 +89,10 @@ namespace StarterAssets
 		public void BlockInput(bool newBlockState)
 		{
 			block = newBlockState;
+		}
+		public void ViewpointLockedInput(bool newViewpointLockedState)
+		{
+			ViewpointLocked = newViewpointLockedState;
 		}
 
 

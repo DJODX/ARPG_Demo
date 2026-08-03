@@ -21,6 +21,8 @@ public class OrcishControl : MonoBehaviour, IDamageable
     public float hurtDuration = 0.5f;
     [Tooltip("攻击动画兜底超时（秒），动画事件缺失时防止卡死，0=关闭")]
     public float attackTimeout = 3f;
+    [Tooltip("进入攻击状态后延迟开启武器判定的时间（秒）")]
+    public float weaponHitboxDelay = 0.5f;
     [Tooltip("攻击时移动速度倍率（0.5 = 减速到一半）")]
     public float attackMoveSpeedFactor = 0.5f;
     [Tooltip("死亡后销毁延迟（秒）")]
@@ -29,6 +31,8 @@ public class OrcishControl : MonoBehaviour, IDamageable
     [Header("组件引用")]
     [Tooltip("玩家 Transform（不指定则按 Player 标签查找）")]
     public Transform player;
+    [Tooltip("武器命中检测器（不指定则自动在子物体中查找）")]
+    public HitboxDetector weaponHitbox;
 
     private NavMeshAgent _agent;
     private Animator _animator;
@@ -54,6 +58,7 @@ public class OrcishControl : MonoBehaviour, IDamageable
         _baseSpeed = _agent != null ? _agent.speed : 0f;
 
         if (player == null) FindPlayer();
+        if (weaponHitbox == null) weaponHitbox = GetComponentInChildren<HitboxDetector>(true);
         if (_attribute != null) _attribute.OnDeath += HandleDeath;
     }
 
@@ -171,6 +176,20 @@ public class OrcishControl : MonoBehaviour, IDamageable
 
     /// <summary>发起攻击（播放攻击动画）</summary>
     public void Attack() => SetTriggerSafe("Attack");
+
+    /// <summary>开启武器命中判定（进入攻击状态时调用）</summary>
+    public void EnableWeaponHitbox()
+    {
+        if (weaponHitbox == null) return;
+        weaponHitbox.EnableHitbox();
+    }
+
+    /// <summary>关闭武器命中判定（离开攻击状态时调用）</summary>
+    public void DisableWeaponHitbox()
+    {
+        if (weaponHitbox == null) return;
+        weaponHitbox.DisableHitbox();
+    }
 
     /// <summary>由攻击动画最后一帧的 AnimationEvent 调用：标记攻击完成</summary>
     public void OnAttackAnimEnd()

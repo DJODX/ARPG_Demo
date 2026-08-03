@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -28,6 +29,9 @@ public class AudioManager : MonoSingleton<AudioManager>
 
     private AudioSource _bgmSource;
     private AudioSource _sfxSource;
+
+    /// <summary>追踪中的世界空间临时音效源（用于角色死亡时统一停止）</summary>
+    private readonly List<AudioSource> _spatialSources = new List<AudioSource>();
 
     protected override void OnSingletonAwake()
     {
@@ -122,11 +126,37 @@ public class AudioManager : MonoSingleton<AudioManager>
 
     /// <summary>
     /// 在世界空间位置播放音效（保留 3D 空间感，音量受全局 sfxVolume 与静音管理）
+    /// 手动创建并追踪 AudioSource，便于 StopSpatialSFX 统一停止（PlayClipAtPoint 无法获取句柄）
     /// </summary>
     public void PlaySFXAtPoint(AudioClip clip, Vector3 position, float volume = 1f)
     {
         if (clip == null || sfxMuted) return;
-        AudioSource.PlayClipAtPoint(clip, position, sfxVolume * Mathf.Clamp01(volume));
+
+        var go = new GameObject("TempSpatialSFX");
+        go.transform.position = position;
+        var src = go.AddComponent<AudioSource>();
+        src.clip = clip;
+        src.spatialBlend = 1f;
+        src.volume = sfxVolume * Mathf.Clamp01(volume);
+        src.Play();
+        _spatialSources.Add(src);
+        Destroy(go, clip.length + 0.1f);
+    }
+
+    /// <summary>
+    /// 停止并销毁所有正在播放的世界空间音效（角色死亡时清除脚步声/落地声等）
+    /// </summary>
+    public void StopSpatialSFX()
+    {
+        for (int i = _spatialSources.Count - 1; i >= 0; i--)
+        {
+            if (_spatialSources[i] != null)
+            {
+                _spatialSources[i].Stop();
+                Destroy(_spatialSources[i].gameObject);
+            }
+        }
+        _spatialSources.Clear();
     }
 
     /// <summary>

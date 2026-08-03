@@ -74,6 +74,13 @@ namespace StarterAssets
         [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
 
+        [Header("Lock On")]
+        [Tooltip("视角锁定的索敌半径（米）")]
+        public float LockOnRange = 10.0f;
+
+        [Tooltip("敌人所在图层，用于索敌")]
+        public LayerMask EnemyLayers;
+
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
@@ -100,6 +107,12 @@ namespace StarterAssets
         private int _animIDBlock;
 
         private HitboxDetector _hitboxDetector;
+        private PlayerHealth _playerHealth;
+
+        // lock on
+        private Transform _lockOnTarget;
+        private IDamageable _lockOnDamageable;
+        private bool _lockOnLayerWarned;
 
 
 
@@ -154,6 +167,14 @@ namespace StarterAssets
             AssignAnimationIDs();
 
             _hitboxDetector = GetComponentInChildren<HitboxDetector>();
+            _playerHealth = GetComponent<PlayerHealth>();
+
+            // 未配置敌人图层时，自动尝试使用 "Enemy" 图层
+            if (EnemyLayers.value == 0)
+            {
+                int enemyLayer = LayerMask.NameToLayer("Enemy");
+                if (enemyLayer >= 0) EnemyLayers = 1 << enemyLayer;
+            }
 
             // reset our timeouts on start
             _jumpTimeoutDelta = JumpTimeout;
@@ -164,11 +185,15 @@ namespace StarterAssets
         {
             _hasAnimator = TryGetComponent(out _animator);
 
+            // 死亡后停止全部玩家控制逻辑（受伤/死亡表现由 PlayerHealth 处理）
+            if (_playerHealth != null && _playerHealth.IsDead) return;
+
             JumpAndGravity();
             GroundedCheck();
             Move();
             Attack();
             Block();
+            LockOn();
         }
 
         private void LateUpdate()
@@ -204,8 +229,21 @@ namespace StarterAssets
 
         private void CameraRotation()
         {
+            // 锁定视角：看向目标身后 2m 处（让怪物居中于画面），忽略玩家鼠标输入
+            if (_lockOnTarget != null)
+            {
+                Vector3 toTarget = _lockOnTarget.position - CinemachineCameraTarget.transform.position;
+                if (toTarget.sqrMagnitude > 0.0001f)
+                {
+                    // 视线终点 = 怪物位置 + 沿“相机→怪物”方向再延伸 2m（即怪物身后 2m）
+                    Vector3 toLook = toTarget + toTarget.normalized * 2f;
+                    toLook.Normalize();
+                    _cinemachineTargetYaw = Mathf.Atan2(toLook.x, toLook.z) * Mathf.Rad2Deg;
+                    _cinemachineTargetPitch = -Mathf.Asin(Mathf.Clamp(toLook.y, -1f, 1f)) * Mathf.Rad2Deg;
+                }
+            }
             // if there is an input and camera position is not fixed
-            if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
+            else if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
                 //Don't multiply mouse input by Time.deltaTime;
                 float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
@@ -233,6 +271,11 @@ namespace StarterAssets
             if (_hasAnimator && _animator.GetCurrentAnimatorStateInfo(1).IsTag("Block"))
             {
 
+                return;
+            }
+            // 受伤硬直中禁止移动
+            if (_playerHealth != null && _playerHealth.IsHurt)
+            {
                 return;
             }
 
@@ -274,12 +317,28 @@ namespace StarterAssets
             // normalise input direction
             Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
 
+            // 移动方向始终相对相机（锁定视角时便于横向走位）
+            float moveRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
+                                 _mainCamera.transform.eulerAngles.y;
+
+            if (_lockOnTarget != null)
+            {
+                // 锁定期间面朝目标
+                Vector3 faceDir = _lockOnTarget.position - transform.position;
+                faceDir.y = 0f;
+                if (faceDir.sqrMagnitude > 0.001f)
+                {
+                    float faceRotation = Mathf.Atan2(faceDir.x, faceDir.z) * Mathf.Rad2Deg;
+                    float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, faceRotation,
+                        ref _rotationVelocity, RotationSmoothTime);
+                    transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
+                }
+            }
             // note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
             // if there is a move input rotate player when the player is moving
-            if (_input.move != Vector2.zero)
+            else if (_input.move != Vector2.zero)
             {
-                _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
-                                  _mainCamera.transform.eulerAngles.y;
+                _targetRotation = moveRotation;
                 float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
                     RotationSmoothTime);
 
@@ -288,7 +347,7 @@ namespace StarterAssets
             }
 
 
-            Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
+            Vector3 targetDirection = Quaternion.Euler(0.0f, moveRotation, 0.0f) * Vector3.forward;
 
             // move the player
             _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
@@ -315,6 +374,9 @@ namespace StarterAssets
         }
         private void Attack()
         {
+            // 受伤硬直中不能攻击
+            if (_playerHealth != null && _playerHealth.IsHurt) return;
+
             if (_input.attack)
             {
                 // 攻击逻辑
@@ -326,12 +388,93 @@ namespace StarterAssets
 
         private void Block()
         {
+            // 受伤硬直中不能格挡
+            if (_playerHealth != null && _playerHealth.IsHurt) return;
+
             if (_input.block)
             {
                 
                 _input.block = false;  // 消耗输入
                 _animator.SetTrigger("Block");
             }
+        }
+
+        /// <summary>
+        /// 视角锁定：按下中键在索敌范围内寻找最近的存活敌人并锁定；
+        /// 已锁定时再按一次取消锁定；目标死亡或超出范围自动解除。
+        /// </summary>
+        private void LockOn()
+        {
+            if (_input.ViewpointLocked)
+            {
+                Debug.Log("LockOn");
+                _input.ViewpointLocked = false;  // 消耗输入（边沿触发）
+                if (_lockOnTarget != null) ReleaseLock();
+                else AcquireLockOnTarget();
+            }
+
+            // 目标死亡或超出索敌范围时自动解除锁定
+            if (_lockOnTarget != null &&
+                (_lockOnDamageable == null || _lockOnDamageable.IsDead ||
+                 Vector3.Distance(_lockOnTarget.position, transform.position) > LockOnRange))
+            {
+                ReleaseLock();
+            }
+        }
+
+        /// <summary>
+        /// 在玩家周围 LockOnRange 米内寻找距离最近的存活敌人作为锁定目标
+        /// </summary>
+        private void AcquireLockOnTarget()
+        {
+            int layerMask = EnemyLayers.value;
+            if (layerMask == 0)
+            {
+                // 未配置敌人图层时兜底：检测所有图层的可伤害对象
+                layerMask = ~0;
+                if (!_lockOnLayerWarned)
+                {
+                    _lockOnLayerWarned = true;
+                    Debug.LogWarning("ThirdPersonController: 未配置 EnemyLayers，已回退为检测所有图层。请在 Inspector 中指定敌人图层。");
+                }
+            }
+
+            Collider[] hits = Physics.OverlapSphere(transform.position, LockOnRange, layerMask,
+                QueryTriggerInteraction.Ignore);
+            Transform best = null;
+            IDamageable bestDamageable = null;
+            float bestSqr = LockOnRange * LockOnRange;
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                IDamageable damageable = hits[i].GetComponentInParent<IDamageable>();
+                if (damageable == null || damageable.IsDead) continue;
+                if (damageable == _playerHealth) continue;  // 排除玩家自身
+
+                float sqr = (hits[i].transform.position - transform.position).sqrMagnitude;
+                if (sqr < bestSqr)
+                {
+                    bestSqr = sqr;
+                    best = hits[i].transform;
+                    bestDamageable = damageable;
+                }
+            }
+
+            _lockOnTarget = best;
+            _lockOnDamageable = bestDamageable;
+        }
+
+        private void ReleaseLock()
+        {
+            _lockOnTarget = null;
+            _lockOnDamageable = null;
+        }
+
+        private void Reset()
+        {
+            // 组件重置时自动选中 "Enemy" 图层
+            int enemyLayer = LayerMask.NameToLayer("Enemy");
+            if (enemyLayer >= 0) EnemyLayers = 1 << enemyLayer;
         }
         
         private void JumpAndGravity()
@@ -355,7 +498,7 @@ namespace StarterAssets
                 }
 
                 // Jump
-                if (_input.jump && _jumpTimeoutDelta <= 0.0f)
+                if (_input.jump && _jumpTimeoutDelta <= 0.0f && (_playerHealth == null || !_playerHealth.IsHurt))
                 {
                     // the square root of H * -2 * G = how much velocity needed to reach desired height
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
@@ -426,6 +569,8 @@ namespace StarterAssets
 
         private void OnFootstep(AnimationEvent animationEvent)
         {
+            // 死亡后不再播放脚步声
+            if (_playerHealth != null && _playerHealth.IsDead) return;
             // 攻击中不播脚步声
             if (_hasAnimator && _animator.GetCurrentAnimatorStateInfo(1).IsTag("Attack"))
                 return;
@@ -443,6 +588,9 @@ namespace StarterAssets
 
         private void OnLand(AnimationEvent animationEvent)
         {
+            // 死亡后不再播放落地声
+            if (_playerHealth != null && _playerHealth.IsDead) return;
+
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
                 // 落地音量统一由 AudioManager 的 sfxVolume / 静音管理

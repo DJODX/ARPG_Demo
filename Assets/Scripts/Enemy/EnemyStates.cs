@@ -91,6 +91,8 @@ public class AttackState : EnemyStateBase
     private bool _attackFinished;
     private bool _switching;
     private float _elapsed;
+    private bool _hitboxOpened;
+    private float _hitboxTimer;
 
     public AttackState(OrcishControl orc) : base(orc) { }
 
@@ -100,6 +102,8 @@ public class AttackState : EnemyStateBase
         _attackFinished = false;
         _switching = false;
         _elapsed = 0f;
+        _hitboxOpened = false;
+        _hitboxTimer = 0f;
         orc.Attack();
     }
 
@@ -108,6 +112,17 @@ public class AttackState : EnemyStateBase
         _elapsed += Time.deltaTime;
         orc.FacePlayer();
         orc.MoveToPlayer(); // 攻击中保持减速追击
+
+        // 进入攻击状态后延迟 weaponHitboxDelay 秒再开启武器判定（避免起手帧就命中）
+        if (!_hitboxOpened)
+        {
+            _hitboxTimer += Time.deltaTime;
+            if (_hitboxTimer >= orc.weaponHitboxDelay)
+            {
+                orc.EnableWeaponHitbox();
+                _hitboxOpened = true;
+            }
+        }
 
         // 安全兜底：动画事件未配置时防止卡死在攻击状态（避免逻辑死锁）
         if (!_attackFinished && orc.attackTimeout > 0f && _elapsed >= orc.attackTimeout)
@@ -128,9 +143,10 @@ public class AttackState : EnemyStateBase
         }
     }
 
-    /// <summary>退出攻击：恢复基础移动速度</summary>
+    /// <summary>退出攻击：关闭武器判定并恢复基础移动速度</summary>
     public override void Exit()
     {
+        orc.DisableWeaponHitbox(); // 离开攻击状态：关闭武器命中判定
         orc.ExitAttackMove();
     }
 
