@@ -5,7 +5,7 @@ using UnityEngine;
 public enum ItemType
 {
     None,
-    equipment,
+    Equipment,
     Consumable,
     Material,
 }
