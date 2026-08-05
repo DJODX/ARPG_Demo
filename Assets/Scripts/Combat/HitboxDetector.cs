@@ -15,7 +15,7 @@ public class HitboxDetector : MonoBehaviour
     public Collider hitboxCollider;
 
     /// <summary>攻击者自身的碰撞体（避免打到自己）</summary>
-    public Collider _ownerCollider;
+    private Collider _ownerCollider;
 
     /// <summary>攻击者的属性组件（读取攻击力与暴击率）</summary>
     private AttributeComponent _ownerAttribute;
