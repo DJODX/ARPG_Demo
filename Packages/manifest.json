@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.claude.unity-mcp": "file:D:/unity code/Plugin/UnityMCP-main/UnityMCPPlugin",
+    "com.unity.addressables": "1.22.3",
     "com.unity.ai.navigation": "1.1.7",
     "com.unity.cinemachine": "2.10.3",
     "com.unity.collab-proxy": "2.12.4",
