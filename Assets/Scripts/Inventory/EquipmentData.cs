@@ -3,11 +3,9 @@ using UnityEngine;
 /// <summary>装备位（所有装备的公共维度，与具体类型无关）</summary>
 public enum EquipmentType
 {
-    head,
+
     body,
-    hand,
-    foot,
-    leg,
+    ring,
     Weapon,
 }
 
@@ -26,6 +24,10 @@ public abstract class EquipmentData : ItemData
 public class WeaponData : EquipmentData
 {
     public int itemDamage;
+    private void OnEnable()
+    {
+        equipmentType = EquipmentType.Weapon;
+    }
 }
 
 /// <summary>盔甲装备：盔甲独有字段</summary>
@@ -33,6 +35,10 @@ public class WeaponData : EquipmentData
 public class ArmorData : EquipmentData
 {
     public int itemDefense;
+    private void OnEnable()
+    {
+        equipmentType = EquipmentType.body;
+    }
 }
 
 /// <summary>饰品装备：饰品独有字段</summary>
@@ -41,4 +47,8 @@ public class RingData : EquipmentData
 {
     public int mpBonus;      // 法力上限加成
     public float critBonus;  // 暴击率加成
+    private void OnEnable()
+    {
+        equipmentType = EquipmentType.ring;
+    }
 }
