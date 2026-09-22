@@ -15,15 +15,21 @@ public class InventorySlot : MonoBehaviour
     /// <summary>刷新格子内容；item 为 null 时空显示</summary>
     public void Refresh(ItemData item, int count)
     {
-        if (item == null || count <= 0)
+        bool show = item != null && count > 0;
+        _iconImage.gameObject.SetActive(show);
+
+        if (!show)
         {
-            _iconImage.gameObject.SetActive(false);
             _countText.text = string.Empty;
+            _countText.gameObject.SetActive(false);
             return;
         }
 
         _iconImage.sprite = item.itemIcon;
-        _iconImage.gameObject.SetActive(true);
-        _countText.text = count > 1 ? count.ToString() : string.Empty;
+
+        // 数量为 1 时不显示数字，且显隐由代码显式控制，不依赖预制体初始状态
+        bool showCount = count > 1;
+        _countText.text = showCount ? count.ToString() : string.Empty;
+        _countText.gameObject.SetActive(showCount);
     }
 }

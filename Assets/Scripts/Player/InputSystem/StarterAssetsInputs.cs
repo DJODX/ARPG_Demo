@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -15,6 +16,8 @@ namespace StarterAssets
 		public bool attack;
 		public bool block;
 		public bool ViewpointLocked;
+
+		public event Action OnInventoryPressed;
 
 		[Header("Movement Settings")]
 		public bool analogMovement;
@@ -60,13 +63,19 @@ namespace StarterAssets
 		{
 			ViewpointLockedInput(value.isPressed);
 		}
+
+		public void OnInventory(InputValue value)
+		{
+			if (value.isPressed)
+				OnInventoryPressed?.Invoke();
+		}
 #endif
 
 
 		public void MoveInput(Vector2 newMoveDirection)
 		{
 			move = newMoveDirection;
-		} 
+		}
 
 		public void LookInput(Vector2 newLookDirection)
 		{
@@ -102,10 +111,10 @@ namespace StarterAssets
 			SetCursorState(cursorLocked);
 		}
 
-		private void SetCursorState(bool newState)
+		public void SetCursorState(bool newState)
 		{
 			Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
 		}
 	}
-	
+
 }

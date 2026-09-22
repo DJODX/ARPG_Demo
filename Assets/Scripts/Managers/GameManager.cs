@@ -8,16 +8,21 @@ public class GameManager : MonoBehaviour
     float time = 0;
     void Start()
     {
-        UIManager.Instance.ShowPanel<BackpackPanel>();
-        InventoryManager.Instance.AddItem(1001, 2);
-        
+        if(InventoryManager.Instance.AddItem(1001,5))
+        {
+            Debug.Log("添加成功");
+        }
+        else
+        {
+            Debug.Log("添加失败");
+        }
+
 
     }
 
     // Update is called once per frame
     void Update()
     {
-        time += Time.deltaTime;
-        
+        time += Time.deltaTime;    
     }
 }

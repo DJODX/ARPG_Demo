@@ -27,6 +27,15 @@ public class UIManager : Singleton<UIManager>
         await ShowPanelByName(typeof(T).Name);
     }
 
+    /// <summary>切换面板显示状态（未显示则打开，已显示则关闭）</summary>
+    public async Task TogglePanel<T>() where T : PanelBase
+    {
+        if (_panelDict.ContainsKey(typeof(T).Name))
+            HidePanel<T>();
+        else
+            await ShowPanel<T>();
+    }
+
     /// <summary>重新显示最近一次隐藏的面板</summary>
     public async Task ShowLastPanel()
     {

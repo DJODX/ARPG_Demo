@@ -1,34 +1,29 @@
 using UnityEngine;
 
 /// <summary>
-/// 消耗品基类：公共字段（使用冷却等）
-/// 抽象类，不能直接创建；具体类型见 HealConsumableData / BuffConsumableData。
-/// 用继承代替类型枚举：每种消耗品一个类，Inspector 只显示该类独有的字段
+/// 消耗品基类：物品大类固定为 Consumable，公共字段为使用冷却
+/// 抽象类，不能直接创建；具体类型见 HealConsumableData / ManaConsumableData
 /// </summary>
 public abstract class ConsumableData : ItemData
 {
+    public override ItemType itemType => ItemType.Consumable;
+
     [Tooltip("使用冷却（秒）")]
     public float cooldown;
 }
 
-/// <summary>恢复类消耗品：回复生命/法力</summary>
-[CreateAssetMenu(menuName = "ARPG/Items/HealConsumable", fileName = "HealConsumable")]
+/// <summary>回血消耗品：仅恢复生命</summary>
+[CreateAssetMenu(menuName = "ARPG/Items/HealthPotion", fileName = "HealthPotion")]
 public class HealConsumableData : ConsumableData
 {
     [Tooltip("生命回复量")]
-    public int itemHeal;
-
-    [Tooltip("法力回复量")]
-    public int itemMana;
+    public int healAmount;
 }
 
-/// <summary>增益类消耗品：临时状态加成</summary>
-[CreateAssetMenu(menuName = "ARPG/Items/BuffConsumable", fileName = "BuffConsumable")]
-public class BuffConsumableData : ConsumableData
+/// <summary>回蓝消耗品：仅恢复法力</summary>
+[CreateAssetMenu(menuName = "ARPG/Items/ManaPotion", fileName = "ManaPotion")]
+public class ManaConsumableData : ConsumableData
 {
-    [Tooltip("移动速度加成")]
-    public int itemSpeed;
-
-    [Tooltip("持续时长（秒）")]
-    public float duration;
+    [Tooltip("法力回复量")]
+    public int manaAmount;
 }
