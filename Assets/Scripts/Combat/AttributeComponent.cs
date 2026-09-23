@@ -45,6 +45,9 @@ public class AttributeComponent : MonoBehaviour
     /// <summary>是否已死亡</summary>
     public bool IsDead => _currentHp <= 0f;
 
+    /// <summary>最后一次造成伤害的攻击者（用于击杀归属判定，如掉落奖励）</summary>
+    public GameObject LastAttacker { get; private set; }
+
     /// <summary>生命值变化事件（参数为当前生命值），UI 监听刷新血条</summary>
     public event Action<float> OnHpChanged;
     /// <summary>法力值变化事件（参数为当前法力值），UI 监听刷新法力条</summary>
@@ -66,6 +69,9 @@ public class AttributeComponent : MonoBehaviour
     public void TakeDamage(DamageInfo info)
     {
         if (IsDead) return; // 已死亡不再承受伤害
+
+        // 记录攻击者，供击杀归属判定（掉落奖励等）使用
+        LastAttacker = info.source;
 
         // 伤害公式，含暴击判定（此处直接使用传入的 isCrit，由攻击方或外部判定）
         float finalDamage = DamageCalculator.Calculate(info.amount, def, info.isCrit, critMult);
