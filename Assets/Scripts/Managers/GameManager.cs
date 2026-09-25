@@ -8,7 +8,7 @@ public class GameManager : MonoBehaviour
     float time = 0;
     void Start()
     {
-        if(InventoryManager.Instance.AddItem(1001,5))
+        if(InventoryManager.Instance.AddItem(2001,1))
         {
             Debug.Log("添加成功");
         }

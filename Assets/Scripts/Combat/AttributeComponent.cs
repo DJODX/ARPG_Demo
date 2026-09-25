@@ -9,22 +9,44 @@ using UnityEngine;
 public class AttributeComponent : MonoBehaviour
 {
     [Header("基础属性")]
-    [Tooltip("最大生命值")]
-    public float maxHp = 100f;
+    [Tooltip("基础最大生命值（装备不影响）")]
+    public float baseMaxHp = 100f;
 
-    [Tooltip("攻击力")]
-    public float atk = 10f;
-    [Tooltip("法力值")]
-    public float maxMp = 10f;
+    [Tooltip("基础攻击力")]
+    public float baseAtk = 10f;
 
-    [Tooltip("防御力")]
-    public float def = 5f;
+    [Tooltip("基础法力上限")]
+    public float baseMaxMp = 10f;
 
-    [Tooltip("暴击率 0~1")]
-    [Range(0f, 1f)] public float critRate = 0.05f;
+    [Tooltip("基础防御力")]
+    public float baseDef = 5f;
+
+    [Tooltip("基础暴击率 0~1")]
+    [Range(0f, 1f)] public float baseCritRate = 0.05f;
 
     [Tooltip("暴击倍率")]
     [Range(1f, 5f)] public float critMult = 1.5f;
+
+    /// <summary>装备提供的加成（由 PlayerEquipmentStats 整体重算后覆盖写入，此处不做累加）</summary>
+    private float _bonusAtk;
+    private float _bonusDef;
+    private float _bonusMaxMp;
+    private float _bonusCritRate;
+
+    /// <summary>最大生命值（基础值，装备不影响）</summary>
+    public float maxHp => baseMaxHp;
+
+    /// <summary>攻击力 = 基础值 + 装备加成</summary>
+    public float atk => baseAtk + _bonusAtk;
+
+    /// <summary>防御力 = 基础值 + 装备加成</summary>
+    public float def => baseDef + _bonusDef;
+
+    /// <summary>法力上限 = 基础值 + 装备加成</summary>
+    public float maxMp => baseMaxMp + _bonusMaxMp;
+
+    /// <summary>暴击率 = 基础值 + 装备加成（钳制在 0~1，防止超过 100%）</summary>
+    public float critRate => Mathf.Clamp01(baseCritRate + _bonusCritRate);
 
     /// <summary>当前生命值（私有，只能通过 TakeDamage/Heal 修改）</summary>
     private float _currentHp;
@@ -104,5 +126,28 @@ public class AttributeComponent : MonoBehaviour
     {
         _currentHp = maxHp;
         OnHpChanged?.Invoke(_currentHp);
+    }
+
+    /// <summary>
+    /// 设置装备加成（装备/卸下时由 PlayerEquipmentStats 汇总后调用）
+    /// 采用覆盖写入而非累加，保证反复装备、读档重算都不会产生数值漂移
+    /// </summary>
+    /// <param name="atkBonus">攻击力加成</param>
+    /// <param name="defBonus">防御力加成</param>
+    /// <param name="maxMpBonus">法力上限加成</param>
+    /// <param name="critRateBonus">暴击率加成</param>
+    public void SetEquipmentBonus(float atkBonus, float defBonus, float maxMpBonus, float critRateBonus)
+    {
+        _bonusAtk = atkBonus;
+        _bonusDef = defBonus;
+        _bonusMaxMp = maxMpBonus;
+        _bonusCritRate = critRateBonus;
+
+        // 卸下加法力上限的装备后上限会变小，当前法力需钳制，否则 MpPercent 会超过 1
+        if (_currentMp > maxMp)
+        {
+            _currentMp = maxMp;
+            OnMpChanged?.Invoke(_currentMp);
+        }
     }
 }

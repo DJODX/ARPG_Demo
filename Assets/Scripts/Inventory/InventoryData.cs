@@ -105,5 +105,27 @@ public class InventoryData
         return remaining == 0;
     }
 
+    /// <summary>取指定序号的格子数据（越界返回 null）</summary>
+    public ItemStack GetStack(int index)
+    {
+        return index >= 0 && index < slots.Count ? slots[index] : null;
+    }
+
+    /// <summary>
+    /// 从指定序号的格子扣减数量，归零则移除该格
+    /// 供装备等需要精确定位的操作使用（RemoveItem 是按 itemId 从后往前扣，定位不精确）
+    /// </summary>
+    public bool RemoveAt(int index, int count)
+    {
+        if (count <= 0) return true;
+        if (index < 0 || index >= slots.Count) return false;
+
+        ItemStack s = slots[index];
+        int take = Math.Min(s.count, count);
+        s.count -= take;
+        if (s.count <= 0) slots.RemoveAt(index);
+        return take == count;
+    }
+
     public void Clear() => slots.Clear();
 }

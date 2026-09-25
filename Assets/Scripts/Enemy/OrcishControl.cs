@@ -207,8 +207,8 @@ public class OrcishControl : MonoBehaviour, IDamageable
         if (_attribute == null || _attribute.IsDead || _invincible) return;
 
         _attribute.TakeDamage(info);
-
-        // 未死亡 → 无论当前处于什么状态，立即强制进入受伤
+        Debug.Log($"受伤：{info.amount}点伤害");
+        // 未死亡 → 无论当前处于什么状态，立即强制进入受伤状态
         if (!_attribute.IsDead)
         {
             Fsm.ForceSwitchState(EnemyState.Hurt);

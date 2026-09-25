@@ -67,6 +67,17 @@ public class InventoryManager : MonoSingleton<InventoryManager>
         return ok;
     }
 
+    /// <summary>取指定序号的格子数据（越界返回 null）</summary>
+    public ItemStack GetStack(int index) => _data.GetStack(index);
+
+    /// <summary>从指定序号的格子移除物品（供装备等精确定位操作使用）</summary>
+    public bool RemoveAt(int index, int count)
+    {
+        bool ok = _data.RemoveAt(index, count);
+        OnInventoryChanged?.Invoke();
+        return ok;
+    }
+
     /// <summary>查询某物品总数量</summary>
     public int CountItem(int itemId) => _data.CountItem(itemId);
 
