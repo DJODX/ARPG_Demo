@@ -22,6 +22,13 @@ public class InventoryManager : MonoSingleton<InventoryManager>
     /// <summary>背包数据变化事件（UI 订阅刷新）</summary>
     public event Action OnInventoryChanged;
 
+    /// <summary>
+    /// 物品入包事件（参数：物品 ID、实际新增数量）
+    /// 与 OnInventoryChanged 的区别：本事件带"获得了什么、多少"，
+    /// 供任务计数等需要物品身份的系统订阅
+    /// </summary>
+    public event Action<int, int> OnItemAdded;
+
     protected override void OnSingletonAwake()
     {
         _data = new InventoryData();
@@ -45,17 +52,28 @@ public class InventoryManager : MonoSingleton<InventoryManager>
     public bool AddItem(ItemData item, int count)
     {
         if (item == null || count <= 0) return false;
-        bool ok = _data.AddItem(item.itemID, count);
-        OnInventoryChanged?.Invoke();
-        return ok;
+        return AddAndNotify(item.itemID, count);
     }
 
     /// <summary>添加物品（按 ID），ID 未在物品库中注册时返回 false</summary>
     public bool AddItem(int itemId, int count)
     {
         if (GetItem(itemId) == null || count <= 0) return false;
+        return AddAndNotify(itemId, count);
+    }
+
+    /// <summary>
+    /// 执行添加并按"实际新增数量"广播入包事件
+    /// 背包放不下时实际新增会少于请求数量，因此用前后差值而非请求值上报
+    /// </summary>
+    private bool AddAndNotify(int itemId, int count)
+    {
+        int before = _data.CountItem(itemId);
         bool ok = _data.AddItem(itemId, count);
         OnInventoryChanged?.Invoke();
+
+        int added = _data.CountItem(itemId) - before;
+        if (added > 0) OnItemAdded?.Invoke(itemId, added);
         return ok;
     }
 

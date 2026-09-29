@@ -36,5 +36,8 @@ public class RewardSource : MonoBehaviour
         if (receiver == null) return;
 
         RewardManager.Instance.GrantAll(rewards, receiver, gameObject);
+
+        // 上报击杀事件（与是否配置奖励无关），供任务计数等外部系统订阅
+        RewardManager.Instance.NotifyEnemyKilled(receiver, gameObject);
     }
 }

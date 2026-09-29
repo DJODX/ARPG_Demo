@@ -16,6 +16,13 @@ public class RewardManager : MonoSingleton<RewardManager>
     /// <summary>奖励发放成功事件（参数：奖励类型、数量）</summary>
     public event Action<RewardType, int> OnRewardGranted;
 
+    /// <summary>
+    /// 敌人被玩家击杀事件（参数：玩家、被击杀的敌人）
+    /// 由 RewardSource 确认击杀归属后主动上报，与是否配置了奖励无关，
+    /// 供任务计数等外部系统订阅（不参与奖励发放）
+    /// </summary>
+    public event Action<PlayerProgression, GameObject> OnEnemyKilled;
+
     protected override void OnSingletonAwake()
     {
         // 内置策略：新增奖励类型时在此补充一行
@@ -79,5 +86,17 @@ public class RewardManager : MonoSingleton<RewardManager>
             if (Grant(entries[i], receiver, victim)) granted++;
         }
         return granted;
+    }
+
+    /// <summary>
+    /// 上报一次"玩家击杀敌人"（供任务系统等订阅）
+    /// 单独成方法而不放在 GrantAll 里：任务完成奖励同样走 GrantAll，
+    /// 若在那里广播会被误认为一次击杀
+    /// </summary>
+    /// <param name="receiver">击杀者（玩家）</param>
+    /// <param name="victim">被击杀的敌人</param>
+    public void NotifyEnemyKilled(PlayerProgression receiver, GameObject victim)
+    {
+        OnEnemyKilled?.Invoke(receiver, victim);
     }
 }
