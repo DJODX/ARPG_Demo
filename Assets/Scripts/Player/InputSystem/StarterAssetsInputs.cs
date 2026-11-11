@@ -18,6 +18,7 @@ namespace StarterAssets
 		public bool ViewpointLocked;
 
 		public event Action OnInventoryPressed;
+		public event Action OnQuestPressed;
 
 		[Header("Movement Settings")]
 		public bool analogMovement;
@@ -68,6 +69,12 @@ namespace StarterAssets
 		{
 			if (value.isPressed)
 				OnInventoryPressed?.Invoke();
+		}
+
+		public void OnQuest(InputValue value)
+		{
+			if (value.isPressed)
+				OnQuestPressed?.Invoke();
 		}
 #endif
 

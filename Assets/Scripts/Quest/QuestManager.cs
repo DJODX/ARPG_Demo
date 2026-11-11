@@ -100,6 +100,20 @@ public class QuestManager : MonoSingleton<QuestManager>
         return runtime;
     }
 
+    /// <summary>任务库中的全部任务（只读，供任务 UI 展示）</summary>
+    public IReadOnlyCollection<QuestDefinition> AllQuests => _lookup.Values;
+
+    /// <summary>取尚未接取的任务（供接取任务 UI 展示可接列表）</summary>
+    public List<QuestDefinition> GetAvailableQuests()
+    {
+        List<QuestDefinition> result = new List<QuestDefinition>();
+        foreach (QuestDefinition definition in _lookup.Values)
+        {
+            if (!IsAccepted(definition.questId)) result.Add(definition);
+        }
+        return result;
+    }
+
     // ==================== 事件入口 ====================
 
     /// <summary>敌人被玩家击杀：取敌人标识后分发给击杀类目标</summary>
