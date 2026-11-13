@@ -201,4 +201,35 @@ public class AudioManager : MonoSingleton<AudioManager>
     {
         bgmMuted = !bgmMuted;
     }
+
+    // ==================== 存档 ====================
+
+    /// <summary>导出当前音量与静音设置（返回独立副本，避免与运行时状态共享引用）</summary>
+    public AudioSaveData CaptureSettings()
+    {
+        return new AudioSaveData
+        {
+            bgmVolume = bgmVolume,
+            sfxVolume = sfxVolume,
+            bgmMuted = bgmMuted,
+            sfxMuted = sfxMuted,
+        };
+    }
+
+    /// <summary>应用存档中的音量与静音设置（读档时调用）</summary>
+    public void RestoreSettings(AudioSaveData settings)
+    {
+        if (settings == null) return;
+
+        bgmVolume = Mathf.Clamp01(settings.bgmVolume);
+        sfxVolume = Mathf.Clamp01(settings.sfxVolume);
+        bgmMuted = settings.bgmMuted;
+        sfxMuted = settings.sfxMuted;
+
+        if (_bgmSource == null) return;
+
+        // 立即同步 BGM 音量；若存档前处于静音、启动时没播 BGM，恢复后补播
+        _bgmSource.volume = bgmMuted ? 0f : bgmVolume;
+        if (!bgmMuted && bgmClip != null && !_bgmSource.isPlaying) PlayBGM();
+    }
 }
